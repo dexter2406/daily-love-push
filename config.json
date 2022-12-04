@@ -1,0 +1,20 @@
+{
+  "app_id": "wx40e5ebc3f5023bda",
+  "app_secret": "52b4eabcdc30ef7ac1baebb9ef07eea9",
+  "template_id": "LFR-qYHXLAHCrtsYi4266Pg02gElTq9Z3fQSorq89Fw",
+  "user": ["ofGgU6b_gCeaDERwHuEpPDqVHTHU"],
+  "province": "\u6d59\u6c5f",
+  "city": "\u676d\u5dde",
+  "birthday1": "1996-03-17",
+  "birthday2": "1995-06-25",
+  "birthday3": "1997-01-03",
+  "love_date": "2018-06-03",
+  "Whether_Eng": "True",
+  "Whether_caihongpi": true,
+  "Whether_lizhi": true,
+  "Whether_tip": true,
+  "Whether_health": false,
+  "Whether_lucky": true,
+  "tianxing_API": "b9dc18bc7b905af6fdde197530937e5c",
+  "astro": ""
+}
