@@ -203,7 +203,8 @@ class DailyLovePush:
                 res = conn.getresponse()
                 data = res.read()
                 data = json.loads(data)
-                lucky_ = str(data["newslist"][8]["content"]).split('，')[0] + '~'
+                lucky_str = str(data["newslist"][8]["content"])
+                lucky_ = lucky_str.split('，')[0] + '~'
                 self.out_data_content["lucky"] = {
                     "value": lucky_,
                     "color": self.get_color("lucky")
