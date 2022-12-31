@@ -46,7 +46,10 @@ class DailyLovePush:
             "birthday2": "#F5D040",
             "note_en": "#38B0DE",
             "lucky": "#F5D040",
-            "poem": "#FF2400"
+            "poem": "#FF2400",
+            "daily_tip": "#f58c71",
+            "silly_love_sentence": "#6f97df",
+            "air_quality": "#000000"
         }
         if obj not in color_dict:
             return self.gen_random_color()
@@ -240,7 +243,7 @@ class DailyLovePush:
             result = tianapi.read()
             data = result.decode('utf-8')
             dict_data = json.loads(data)
-            quest = "考考脑婆：%s (提示：%s)" % (dict_data['result']['quest'], dict_data['result']['source'])
+            quest = "%s (提示：%s)" % (dict_data['result']['quest'], dict_data['result']['source'])
             self.out_data_content["poem"] = {
                 "value": quest,
                 "color": self.get_color("poem")
@@ -262,16 +265,7 @@ class DailyLovePush:
             res = conn.getresponse()
             data = res.read()
             data = json.loads(data)
-            pop_vol = float(data["newslist"][0]["pcpn"])
-            if pop_vol < 10:
-                pop = "(不用带伞~)"
-            if pop_vol >= 10:
-                pop = "(可能要带伞哦~)"
-            elif pop_vol > 20:
-                pop = "(记得带伞！)"
             tips = data["newslist"][0]["tips"]
-            weather = self.out_data_content["weather"]['value']
-            self.out_data_content["weather"]['value'] = f"{weather} {pop}"
 
             self.out_data_content["tips"] = {
                 "value": tips,
@@ -280,6 +274,103 @@ class DailyLovePush:
         except Exception as ex:
             warn(f"天气预报API调取错误: {ex}")
             return pop, tips
+
+    def get_silly_love_sentence(self):
+        out = ""
+        if not self.config.get('get_silly_love_sentence', False):
+            return out
+        try:
+            conn = http.client.HTTPSConnection('apis.tianapi.com')  # 接口域名
+            params = urllib.parse.urlencode({'key': self.config["tianxing_API"]})
+            headers = {'Content-type': 'application/x-www-form-urlencoded'}
+            conn.request('POST', '/saylove/index', params, headers)
+            tianapi = conn.getresponse()
+            result = tianapi.read()
+            data = result.decode('utf-8')
+            dict_data = json.loads(data)
+            res = dict_data['result']
+            out = res['content'].replace("\r\n", ",").replace('\n', ',')
+            self.out_data_content["silly_love_sentence"] = {
+                "value": out,
+                "color": self.get_color("silly_love_sentence")
+            }
+        except Exception as ex:
+            warn(f"土味情话API调取错误: {ex}")
+            return out
+
+    def get_movie_line(self):
+        out = ""
+        if not self.config.get('get_movie_line', False):
+            return out
+        try:
+            conn = http.client.HTTPSConnection('apis.tianapi.com')  # 接口域名
+            params = urllib.parse.urlencode({'key': self.config["tianxing_API"]})
+            headers = {'Content-type': 'application/x-www-form-urlencoded'}
+            conn.request('POST', '/dialogue/index', params, headers)
+            tianapi = conn.getresponse()
+            result = tianapi.read()
+            data = result.decode('utf-8')
+            dict_data = json.loads(data)
+            res = dict_data['result']
+            out = f"经典台词: "
+            if len(res['english']) > 0:
+                out += res['english']
+            else:
+                out += res['dialogue']
+            out += " ——《%s》" % res['source']
+            self.out_data_content["movie_line"] = {
+                "value": out,
+                "color": self.get_color("movie_line")
+            }
+        except Exception as ex:
+            warn(f"经典台词API调取错误: {ex}")
+            return out
+
+    def get_daily_tip(self):
+        out = ""
+        if not self.config.get('get_daily_tip', False):
+            return out
+        try:
+            conn = http.client.HTTPSConnection('apis.tianapi.com')  # 接口域名
+            params = urllib.parse.urlencode({'key': self.config["tianxing_API"]})
+            headers = {'Content-type': 'application/x-www-form-urlencoded'}
+            conn.request('POST', '/qiaomen/index', params, headers)
+            tianapi = conn.getresponse()
+            result = tianapi.read()
+            data = result.decode('utf-8')
+            dict_data = json.loads(data)
+            res = dict_data['result']
+            out = "生活tip: %s" % res['content']
+            self.out_data_content["daily_tip"] = {
+                "value": out,
+                "color": self.get_color("daily_tip")
+            }
+        except Exception as ex:
+            warn(f"生活小窍门API调取错误: {ex}")
+            return out
+
+    def get_air_quality(self):
+        out = ""
+        if not self.config.get('get_air_quality', False):
+            return out
+        try:
+            conn = http.client.HTTPSConnection('apis.tianapi.com')  # 接口域名
+            params = urllib.parse.urlencode({'key': self.config["tianxing_API"], 'area': self.config["city"]})
+            headers = {'Content-type': 'application/x-www-form-urlencoded'}
+            conn.request('POST', '/aqi/index', params, headers)
+            tianapi = conn.getresponse()
+            result = tianapi.read()
+            data = result.decode('utf-8')
+            dict_data = json.loads(data)
+            res = dict_data['result']
+            out = f"空气{res['quality']}, pm2.5={res['pm2_5']}"
+            self.out_data_content["air_quality"] = {
+                "value": out,
+                "color": self.get_color("air_quality")
+            }
+        except Exception as ex:
+            warn(f"空气质量API调取错误: {ex}")
+            return out
 
     def create_data_per_user(self, user):
         return {
@@ -318,8 +409,13 @@ class DailyLovePush:
         self.get_love_days()    # 恋爱纪念日
         self.get_birthdays()    # 获取所有生日数据
         self.get_poem()     # 诗词
+        self.get_air_quality()
+        # self.get_movie_line()
+        self.get_silly_love_sentence()
+        self.get_daily_tip()
         self.out_data['data'] = self.out_data_content
         print(self.out_data_content)
+
     def get_birthdays(self):
         birthdays = {}
         for k, v in self.config.items():
