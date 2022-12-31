@@ -15,6 +15,10 @@
   "Whether_tip": true,
   "Whether_health": false,
   "Whether_lucky": true,
+  "get_air_quality": true,
+  "get_movie_line": true,
+  "get_silly_love_sentence": true,
+  "get_daily_tip": true,
   "tianxing_API": "b9dc18bc7b905af6fdde197530937e5c",
   "astro": "pisces"
 }
