@@ -133,6 +133,47 @@ class DailyLovePush:
             "color": self.get_color("max_temperature")
         }
 
+    def get_weather_tmp(self):
+        # 城市id
+        province = '江苏'
+        city = '南京'
+        self.out_data_content['city_tmp'] = {
+            "value": city,
+            "color": self.get_color('city')
+        }
+        try:
+            city_id = cityinfo.cityInfo[province][city]["AREAID"]
+        except KeyError:
+            print("推送消息失败，请检查省份或城市是否正确")
+            os.system("pause")
+            sys.exit(1)
+        # city_id = 101280101
+        # 毫秒级时间戳
+        t = (int(round(time() * 1000)))
+        headers = {
+            "Referer": "http://www.weather.com.cn/weather1d/{}.shtml".format(city_id),
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                          'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36'
+        }
+        url = "http://d1.weather.com.cn/dingzhi/{}.html?_={}".format(city_id, t)
+        response = get(url, headers=headers)
+        response.encoding = "utf-8"
+        response_data = response.text.split(";")[0].split("=")[-1]
+        response_json = eval(response_data)
+        weatherinfo = response_json["weatherinfo"]
+        self.out_data_content["weather_tmp"] = {
+            "value": weatherinfo["weather"],
+            "color": self.get_color("weather")
+        }
+        self.out_data_content["min_temperature_tmp"] = {
+            "value": weatherinfo["tempn"],
+            "color": self.get_color("min_temperature")
+        }
+        self.out_data_content["max_temperature_tmp"] = {
+            "value": weatherinfo["temp"],
+            "color": self.get_color("max_temperature")
+        }
+
     # 词霸每日一句
     def get_ciba(self):
         if self.config["Whether_Eng"]:
@@ -400,6 +441,7 @@ class DailyLovePush:
         # 传入省份和市获取天气信息
         self.get_basic_info()
         self.get_weather()
+        self.get_weather_tmp()
         self.get_ciba()     # 获取词霸每日金句
         self.caihongpi()    # 彩虹屁
         self.get_health()  # 健康小提示
@@ -412,7 +454,7 @@ class DailyLovePush:
         self.get_air_quality()
         # self.get_movie_line()
         self.get_silly_love_sentence()
-        self.get_daily_tip()
+        # self.get_daily_tip()
         self.out_data['data'] = self.out_data_content
         print(self.out_data_content)
 
