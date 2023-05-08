@@ -124,14 +124,18 @@ class DailyLovePush:
             "value": weatherinfo["weather"],
             "color": self.get_color("weather")
         }
-        self.out_data_content["min_temperature"] = {
-            "value": weatherinfo["tempn"],
-            "color": self.get_color("min_temperature")
-        }
-        self.out_data_content["max_temperature"] = {
-            "value": weatherinfo["temp"],
+        self.out_data_content["temperature_range"] = {
+            "value": weatherinfo["tempn"] + "°C ~ " + weatherinfo["temp"],
             "color": self.get_color("max_temperature")
         }
+        # self.out_data_content["min_temperature"] = {
+        #     "value": weatherinfo["tempn"] + "°C",
+        #     "color": self.get_color("min_temperature")
+        # }
+        # self.out_data_content["max_temperature"] = {
+        #     "value": weatherinfo["temp"] + "°C",
+        #     "color": self.get_color("max_temperature")
+        # }
 
     def get_weather_tmp(self):
         # 城市id
@@ -284,7 +288,7 @@ class DailyLovePush:
             result = tianapi.read()
             data = result.decode('utf-8')
             dict_data = json.loads(data)
-            quest = "%s (提示：%s)" % (dict_data['result']['quest'], dict_data['result']['source'])
+            quest = dict_data['result']['quest'] + "，？"
             self.out_data_content["poem"] = {
                 "value": quest,
                 "color": self.get_color("poem")
