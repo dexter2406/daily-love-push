@@ -49,7 +49,8 @@ class DailyLovePush:
             "poem": "#FF2400",
             "daily_tip": "#f58c71",
             "silly_love_sentence": "#6f97df",
-            "air_quality": "#000000"
+            "air_quality": "#000000",
+            "others": "#6B8E34"
         }
         if obj not in color_dict:
             return self.gen_random_color()
@@ -128,19 +129,11 @@ class DailyLovePush:
             "value": weatherinfo["tempn"] + "°C ~ " + weatherinfo["temp"],
             "color": self.get_color("max_temperature")
         }
-        # self.out_data_content["min_temperature"] = {
-        #     "value": weatherinfo["tempn"] + "°C",
-        #     "color": self.get_color("min_temperature")
-        # }
-        # self.out_data_content["max_temperature"] = {
-        #     "value": weatherinfo["temp"] + "°C",
-        #     "color": self.get_color("max_temperature")
-        # }
 
     def get_weather_tmp(self):
         # 城市id
-        province = '江苏'
-        city = '南京'
+        province = '湖北'
+        city = '宜昌'
         self.out_data_content['city_tmp'] = {
             "value": city,
             "color": self.get_color('city')
@@ -151,7 +144,6 @@ class DailyLovePush:
             print("推送消息失败，请检查省份或城市是否正确")
             os.system("pause")
             sys.exit(1)
-        # city_id = 101280101
         # 毫秒级时间戳
         t = (int(round(time() * 1000)))
         headers = {
@@ -169,12 +161,8 @@ class DailyLovePush:
             "value": weatherinfo["weather"],
             "color": self.get_color("weather")
         }
-        self.out_data_content["min_temperature_tmp"] = {
-            "value": weatherinfo["tempn"],
-            "color": self.get_color("min_temperature")
-        }
-        self.out_data_content["max_temperature_tmp"] = {
-            "value": weatherinfo["temp"],
+        self.out_data_content["temperature_range_tmp"] = {
+            "value": weatherinfo["tempn"] + "°C ~ " + weatherinfo["temp"],
             "color": self.get_color("max_temperature")
         }
 
@@ -291,7 +279,7 @@ class DailyLovePush:
             quest = dict_data['result']['quest'] + "，？"
             self.out_data_content["poem"] = {
                 "value": quest,
-                "color": self.get_color("poem")
+                "color": self.get_color("weather")
             }
         except Exception as ex:
             warn(ex)
@@ -408,8 +396,34 @@ class DailyLovePush:
             data = result.decode('utf-8')
             dict_data = json.loads(data)
             res = dict_data['result']
-            out = f"空气{res['quality']}, pm2.5={res['pm2_5']}"
+            # out = f"空气{res['quality']}, pm2.5={res['pm2_5']}"
+            out = f"空气{res['quality']}"
             self.out_data_content["air_quality"] = {
+                "value": out,
+                "color": self.get_color("air_quality")
+            }
+        except Exception as ex:
+            warn(f"空气质量API调取错误: {ex}")
+            return out
+
+    def get_air_quality_tmp(self):
+        # 城市id
+        city = '宜昌'
+        out = ""
+        if not self.config.get('get_air_quality', False):
+            return out
+        try:
+            conn = http.client.HTTPSConnection('apis.tianapi.com')  # 接口域名
+            params = urllib.parse.urlencode({'key': self.config["tianxing_API"], 'area': city})
+            headers = {'Content-type': 'application/x-www-form-urlencoded'}
+            conn.request('POST', '/aqi/index', params, headers)
+            tianapi = conn.getresponse()
+            result = tianapi.read()
+            data = result.decode('utf-8')
+            dict_data = json.loads(data)
+            res = dict_data['result']
+            out = f"空气{res['quality']}"
+            self.out_data_content["air_quality_tmp"] = {
                 "value": out,
                 "color": self.get_color("air_quality")
             }
@@ -456,11 +470,21 @@ class DailyLovePush:
         self.get_birthdays()    # 获取所有生日数据
         self.get_poem()     # 诗词
         self.get_air_quality()
+        self.get_air_quality_tmp()
+
         # self.get_movie_line()
         self.get_silly_love_sentence()
         # self.get_daily_tip()
+
+        self.diy_sentence()
         self.out_data['data'] = self.out_data_content
         print(self.out_data_content)
+
+    def diy_sentence(self):
+        self.out_data_content["ps"] = {
+            "value": " home sweet home :)",
+            "color": self.get_color("others")
+        }
 
     def get_birthdays(self):
         birthdays = {}
@@ -534,6 +558,7 @@ class DailyLovePush:
             self.out_data = self.create_data_per_user(user)
             self.send_message()
             self.post_msg(access_token)
+
 
 if __name__ == "__main__":
     love_push = DailyLovePush()
