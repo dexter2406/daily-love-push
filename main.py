@@ -195,6 +195,8 @@ class DailyLovePush:
             result = tianapi.read()
             data = result.decode('utf-8')
             dict_data = json.loads(data)
+            if dict_data['code'] != 200:
+                break
             start_date = dict_data['result']['date']['gregdate'].split("-")[1:]
             self.jieqi_info["jieqi_poem"] = dict_data['result']['shiju']
             start_date_cnt = int(start_date[0]) * 100 + int(start_date[1])
@@ -207,9 +209,9 @@ class DailyLovePush:
                 if start_date_cnt == curr_date_cnt:
                     self.jieqi_info["is_today"] = True
                 break
-        self.jieqi_info["is_today"] = True
         if not self.jieqi_info["is_today"]:
-            self.out_data_content['date']['value'] += "，" + self.jieqi_info["curr_jieqi"]
+            # self.out_data_content['date']['value'] += " " + self.jieqi_info["curr_jieqi"]
+            self.out_data_content['date']['value'] += " " + "正值秋分"
 
     # 词霸每日一句
     def get_ciba(self):
