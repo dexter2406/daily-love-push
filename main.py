@@ -16,6 +16,17 @@ class DailyLovePush:
         self.cfg_path = cfg_path
         self.config = {}
         self.week_list = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"]
+
+        self.jieqi_info = {
+            "month_jieqi": {
+            1: ["小寒","大寒"], 2: ["立春","雨水"], 3: ["惊蛰",'春分'], 4: ["清明","谷雨"],
+            5: ["立夏","小满"], 6: ["芒种","夏至"], 7: ["小暑","大暑"], 8: ["立秋","处暑"],
+            9: ["白露","秋分"], 10: ["寒露","霜降"], 11: ["立冬","小雪"], 12: ['大雪',"冬至"]
+        },
+            "is_today" : False,
+            "jieqi_poem": "",
+            "curr_jieqi": ""
+        }
         self.date_info = {}
         self.out_data = {}
         self.out_data_content = {}
@@ -166,6 +177,40 @@ class DailyLovePush:
             "color": self.get_color("max_temperature")
         }
 
+    def get_jieqi(self):
+
+        import time
+        self.jieqi_info["jieqi_poem"] = ""
+        conn = http.client.HTTPSConnection('apis.tianapi.com')  # 接口域名
+        headers = {'Content-type': 'application/x-www-form-urlencoded'}
+        jieqi_list = []
+        for m, j_list in self.jieqi_info["month_jieqi"].items():
+            if self.date_info['month'] -1 <= m <= self.date_info['month'] + 1:
+                jieqi_list.extend(j_list)
+
+        for j in jieqi_list:
+            params = urllib.parse.urlencode({'key': self.config["tianxing_API"], 'word': j, 'year': self.date_info['year']})
+            conn.request('POST', '/jieqi/index', params, headers)
+            tianapi = conn.getresponse()
+            result = tianapi.read()
+            data = result.decode('utf-8')
+            dict_data = json.loads(data)
+            start_date = dict_data['result']['date']['gregdate'].split("-")[1:]
+            self.jieqi_info["jieqi_poem"] = dict_data['result']['shiju']
+            start_date_cnt = int(start_date[0]) * 100 + int(start_date[1])
+            curr_date_cnt = self.date_info.get('month')*100 + self.date_info.get('day')
+            if start_date_cnt <= curr_date_cnt:
+                self.jieqi_info["curr_jieqi"] = "正值" + j
+                time.sleep(0.1)
+                continue
+            else:
+                if start_date_cnt == curr_date_cnt:
+                    self.jieqi_info["is_today"] = True
+                break
+        self.jieqi_info["is_today"] = True
+        if not self.jieqi_info["is_today"]:
+            self.out_data_content['date']['value'] += "，" + self.jieqi_info["curr_jieqi"]
+
     # 词霸每日一句
     def get_ciba(self):
         if self.config["Whether_Eng"]:
@@ -267,6 +312,13 @@ class DailyLovePush:
                 warn("励志古言API调取错误，请检查API是否正确申请或是否填写正确: %s" % ex)
 
     def get_poem(self):
+        if self.jieqi_info["is_today"]:
+            self.out_data_content["poem"] = {
+                "value": self.jieqi_info["curr_jieqi"] + ": " + self.jieqi_info["jieqi_poem"],
+                "color": self.get_color("weather")
+            }
+            return
+
         try:
             conn = http.client.HTTPSConnection('apis.tianapi.com')  # 接口域名
             params = urllib.parse.urlencode({'key': self.config["tianxing_API"]})
@@ -276,7 +328,7 @@ class DailyLovePush:
             result = tianapi.read()
             data = result.decode('utf-8')
             dict_data = json.loads(data)
-            quest = dict_data['result']['quest'] + "，？"
+            quest = "问答环节：" +  dict_data['result']['quest'] + "，？"
             self.out_data_content["poem"] = {
                 "value": quest,
                 "color": self.get_color("weather")
@@ -441,9 +493,11 @@ class DailyLovePush:
 
     def get_basic_info(self):
         """获取星期数、城市名声等基础输入"""
+
         self.out_data_content['date'] = {
-            "value": "{} {}".format(
-                self.date_info.get('today'),
+            "value": "{}-{} {}".format(
+                self.date_info.get('month'),
+                self.date_info.get('day'),
                 self.date_info.get('week')),
             "color": self.get_color("date")
         }
@@ -455,9 +509,11 @@ class DailyLovePush:
     # 推送信息
     def send_message(self):
         # TODO: data字典的组装要根据实际情况,自动跳过未正确获取的字段
+        # exit(1)
         # 获取日期信息
         # 传入省份和市获取天气信息
         self.get_basic_info()
+        self.get_jieqi()
         self.get_weather()
         self.get_weather_tmp()
         self.get_ciba()     # 获取词霸每日金句
