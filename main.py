@@ -210,8 +210,8 @@ class DailyLovePush:
                     self.jieqi_info["is_today"] = True
                 break
         if not self.jieqi_info["is_today"]:
-            # self.out_data_content['date']['value'] += " " + self.jieqi_info["curr_jieqi"]
-            self.out_data_content['date']['value'] += " " + "正值秋分"
+            self.out_data_content['date']['value'] += " " + self.jieqi_info["curr_jieqi"]
+            # self.out_data_content['date']['value'] += " " + "正值秋分"
 
     # 词霸每日一句
     def get_ciba(self):
