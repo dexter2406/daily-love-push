@@ -1,5 +1,6 @@
 import random
-from time import time, localtime
+import time
+from time import localtime
 import cityinfo
 from requests import get, post
 from datetime import datetime, date
@@ -120,7 +121,7 @@ class DailyLovePush:
             sys.exit(1)
         # city_id = 101280101
         # 毫秒级时间戳
-        t = (int(round(time() * 1000)))
+        t = (int(round(time.time() * 1000)))
         headers = {
             "Referer": "http://www.weather.com.cn/weather1d/{}.shtml".format(city_id),
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
@@ -156,7 +157,7 @@ class DailyLovePush:
             os.system("pause")
             sys.exit(1)
         # 毫秒级时间戳
-        t = (int(round(time() * 1000)))
+        t = (int(round(time.time() * 1000)))
         headers = {
             "Referer": "http://www.weather.com.cn/weather1d/{}.shtml".format(city_id),
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
@@ -178,8 +179,6 @@ class DailyLovePush:
         }
 
     def get_jieqi(self):
-
-        import time
         self.jieqi_info["jieqi_poem"] = ""
         conn = http.client.HTTPSConnection('apis.tianapi.com')  # 接口域名
         headers = {'Content-type': 'application/x-www-form-urlencoded'}
@@ -198,20 +197,20 @@ class DailyLovePush:
             if dict_data['code'] != 200:
                 break
             start_date = dict_data['result']['date']['gregdate'].split("-")[1:]
-            self.jieqi_info["jieqi_poem"] = dict_data['result']['shiju']
+            self.jieqi_info["jieqi_poem"] = dict_data['result']['shiju'].split("。")[0] + "."
             start_date_cnt = int(start_date[0]) * 100 + int(start_date[1])
             curr_date_cnt = self.date_info.get('month')*100 + self.date_info.get('day')
-            if start_date_cnt <= curr_date_cnt:
+            if start_date_cnt < curr_date_cnt:
                 self.jieqi_info["curr_jieqi"] = "正值" + j
                 time.sleep(0.1)
                 continue
             else:
                 if start_date_cnt == curr_date_cnt:
                     self.jieqi_info["is_today"] = True
+                    self.jieqi_info["curr_jieqi"] = j
                 break
         if not self.jieqi_info["is_today"]:
             self.out_data_content['date']['value'] += " " + self.jieqi_info["curr_jieqi"]
-            # self.out_data_content['date']['value'] += " " + "正值秋分"
 
     # 词霸每日一句
     def get_ciba(self):
@@ -312,6 +311,24 @@ class DailyLovePush:
                 }
             except Exception as ex:
                 warn("励志古言API调取错误，请检查API是否正确申请或是否填写正确: %s" % ex)
+
+    def get_poem_zhenhuan(self):
+        poem_str = ""
+        if self.jieqi_info["is_today"]:
+            poem_str = self.jieqi_info["curr_jieqi"] + ": " + self.jieqi_info["jieqi_poem"]
+
+        else:
+            with open("zhenhuanzhuan.txt", encoding="utf-8") as f:
+                lines = f.readlines()
+            lines = [l.strip() for l in lines]
+            ind = random.randrange(0, len(lines)-1, 1)
+            poem_str = lines[ind] + "."
+            poem_str = "午梦惊回，满眼春娇。嬛嬛(xuān)一袅楚宫腰."
+
+        self.out_data_content["poem"] = {
+            "value": poem_str,
+            "color": self.get_color("weather")
+        }
 
     def get_poem(self):
         if self.jieqi_info["is_today"]:
@@ -511,11 +528,11 @@ class DailyLovePush:
     # 推送信息
     def send_message(self):
         # TODO: data字典的组装要根据实际情况,自动跳过未正确获取的字段
-        # exit(1)
         # 获取日期信息
         # 传入省份和市获取天气信息
         self.get_basic_info()
         self.get_jieqi()
+        self.get_poem_zhenhuan()
         self.get_weather()
         self.get_weather_tmp()
         self.get_ciba()     # 获取词霸每日金句
@@ -526,7 +543,7 @@ class DailyLovePush:
         self.lucky()   # 星座运势
         self.get_love_days()    # 恋爱纪念日
         self.get_birthdays()    # 获取所有生日数据
-        self.get_poem()     # 诗词
+        # self.get_poem()     # 诗词
         self.get_air_quality()
         self.get_air_quality_tmp()
 
