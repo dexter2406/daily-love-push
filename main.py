@@ -323,7 +323,6 @@ class DailyLovePush:
             lines = [l.strip() for l in lines]
             ind = random.randrange(0, len(lines)-1, 1)
             poem_str = lines[ind] + "."
-            poem_str = "午梦惊回，满眼春娇。嬛嬛(xuān)一袅楚宫腰."
 
         self.out_data_content["poem"] = {
             "value": poem_str,
